@@ -56,7 +56,6 @@ def call_llm_api(query: str) -> str:
             if b == 0:
                 return "The result is undefined."
             result = a / b
-            # Cast to int if whole number
             if result.is_integer():
                 result = int(result)
             return f"The result is {result}."
