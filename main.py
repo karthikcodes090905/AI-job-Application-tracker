@@ -48,9 +48,11 @@ def call_llm_api(query: str) -> str:
     # return response.choices[0].message.content.strip()
     # ---------------------------------------------------------
     
-    # Temporary placeholder response
+    # Temporary placeholder responses for Hackathon Levels
     if "10 + 15" in query:
         return "The sum is 25."
+    elif "12 March 2024" in query:
+        return "12 March 2024"
     
     return f"Placeholder response for: '{query}'"
 
