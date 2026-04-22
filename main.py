@@ -76,14 +76,13 @@ def call_llm_api(query: str) -> str:
             return "NO"
         return "YES"
 
-    # Extract all numbers for Levels 4 and 1
-    all_nums_str = re.findall(r'-?\d+(?:\.\d+)?', query_lower)
+    # Extract all numbers for Levels 4 and 1 (avoiding 1st, 2nd etc)
+    all_nums_str = re.findall(r'(?<![a-zA-Z])-?\d+(?:\.\d+)?(?![a-zA-Z])', query_lower)
     nums = [float(x) if '.' in x else int(x) for x in all_nums_str]
 
     # ---------------------------------------------------------
     # 3. List Operations (Level 4 & Anonymous)
     # ---------------------------------------------------------
-    # Triggers if there are 3+ numbers, or explicit keywords, or "sum even numbers" format
     if len(nums) >= 3 or "numbers:" in query_lower or "list" in query_lower or "array" in query_lower or ("sum" in query_lower and prop_word_match):
         filtered_nums = nums
         if "even" in query_lower:
@@ -105,6 +104,32 @@ def call_llm_api(query: str) -> str:
             
         if not filtered_nums:
             filtered_nums = [0]
+            
+        # Check for sorting / reversing / list extraction
+        if "sort" in query_lower or "order" in query_lower:
+            filtered_nums.sort()
+            if "descending" in query_lower or "reverse" in query_lower:
+                filtered_nums.reverse()
+            return ", ".join(str(int(x) if isinstance(x, float) and x.is_integer() else x) for x in filtered_nums)
+            
+        if "reverse" in query_lower:
+            filtered_nums.reverse()
+            return ", ".join(str(int(x) if isinstance(x, float) and x.is_integer() else x) for x in filtered_nums)
+            
+        # Check for Nth element
+        nth_match = re.search(r'(\d+)(?:st|nd|rd|th)\s+(?:number|element|item)', query_lower)
+        if nth_match:
+            idx = int(nth_match.group(1)) - 1
+            if 0 <= idx < len(filtered_nums):
+                ans = filtered_nums[idx]
+                return str(int(ans) if isinstance(ans, float) and ans.is_integer() else ans)
+                
+        # If no explicit math operation, maybe they just want the filtered list?
+        math_ops = ["sum", "product", "multiply", "add", "average", "mean", "median", "max", "min", "largest", "smallest", "count", "how many", "total"]
+        has_math_op = any(op in query_lower for op in math_ops)
+        
+        if not has_math_op and any(word in query_lower for word in ["extract", "keep", "find", "get", "show", "what are"]):
+            return ", ".join(str(int(x) if isinstance(x, float) and x.is_integer() else x) for x in filtered_nums)
             
         import math, statistics
         if "product" in query_lower or "multiply" in query_lower:
@@ -128,7 +153,6 @@ def call_llm_api(query: str) -> str:
             else:
                 ans = round(ans, 4)
         
-        # Level 4 expects just the raw number
         return str(ans)
 
     # ---------------------------------------------------------
