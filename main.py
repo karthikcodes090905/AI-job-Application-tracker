@@ -10,11 +10,7 @@ class QueryRequest(BaseModel):
 
 @app.post("/solve")
 def solve(request: QueryRequest):
-    import re
-
     query = request.query.lower().strip()
-
-    # Extract numbers (handles integers and decimals)
     numbers = list(map(float, re.findall(r'-?\d+\.?\d*', query)))
 
     if len(numbers) < 2:
@@ -22,37 +18,51 @@ def solve(request: QueryRequest):
 
     a, b = numbers[0], numbers[1]
 
-    # ---------------- ADDITION ----------------
-    if any(word in query for word in ["add", "sum", "+", "plus"]):
+    # Addition
+    if any(word in query for word in ["add", "plus", "sum", "total", "together"]):
         result = a + b
         return {"output": f"The sum is {int(result) if result.is_integer() else result}."}
 
-    # ---------------- SUBTRACTION ----------------
-    if any(word in query for word in ["subtract", "difference", "-", "minus"]):
+    # Subtraction
+    if any(word in query for word in ["subtract", "minus", "difference", "less"]):
         if "from" in query:
-            result = b - a  # reverse order
-        elif "between" in query:
-            result = abs(a - b)
+            result = b - a
         else:
             result = a - b
-
         return {"output": f"The difference is {int(result) if result.is_integer() else result}."}
 
-    # ---------------- MULTIPLICATION ----------------
-    if any(word in query for word in ["multiply", "product", "*", "times", "into"]):
+    # Multiplication
+    if any(word in query for word in ["multiply", "times", "product", "multiplied by"]):
         result = a * b
         return {"output": f"The product is {int(result) if result.is_integer() else result}."}
 
-    # ---------------- DIVISION ----------------
-    if any(word in query for word in ["divide", "/", "by"]):
-        if b == 0:
-            return {"output": "Cannot divide by zero."}
-
-        if "by" in query:
+    # Division
+    if any(word in query for word in ["divide", "divided by", "quotient"]):
+        try:
             result = a / b
-        else:
-            result = a / b
+            if result.is_integer():
+                result = int(result)
+        except ZeroDivisionError:
+            return {"output": "The result is undefined."}
+        return {"output": f"The result is {result}."}
 
-        return {"output": f"The result is {int(result) if result.is_integer() else result}."}
+    # Operator symbol fallback
+    if "+" in query:
+        result = a + b
+        return {"output": f"The sum is {int(result) if result.is_integer() else result}."}
+    if "-" in query:
+        result = a - b
+        return {"output": f"The difference is {int(result) if result.is_integer() else result}."}
+    if "*" in query or "x" in query:
+        result = a * b
+        return {"output": f"The product is {int(result) if result.is_integer() else result}."}
+    if "/" in query:
+        try:
+            result = a / b
+            if result.is_integer():
+                result = int(result)
+        except ZeroDivisionError:
+            return {"output": "The result is undefined."}
+        return {"output": f"The result is {result}."}
 
     return {"output": "I don't understand"}
