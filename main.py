@@ -83,43 +83,50 @@ def call_llm_api(query: str) -> str:
     # ---------------------------------------------------------
     # 3. List Operations (Level 4 & Anonymous)
     # ---------------------------------------------------------
-    # Triggers if there are 3+ numbers, or explicit "numbers:" keyword, or "sum even numbers" format
-    if len(nums) >= 3 or "numbers:" in query_lower or ("sum" in query_lower and prop_word_match):
-        cond_even = "even" in query_lower
-        cond_odd = "odd" in query_lower
-        cond_prime = "prime" in query_lower
-        
+    # Triggers if there are 3+ numbers, or explicit keywords, or "sum even numbers" format
+    if len(nums) >= 3 or "numbers:" in query_lower or "list" in query_lower or "array" in query_lower or ("sum" in query_lower and prop_word_match):
         filtered_nums = nums
-        if cond_even:
+        if "even" in query_lower:
             filtered_nums = [x for x in nums if x % 2 == 0]
-        elif cond_odd:
+        elif "odd" in query_lower:
             filtered_nums = [x for x in nums if x % 2 != 0]
-        elif cond_prime:
+        elif "prime" in query_lower:
             def is_p(n):
-                if n < 2 or not isinstance(n, int): return False
+                if n < 2 or not float(n).is_integer(): return False
+                n = int(n)
                 for i in range(2, int(n**0.5) + 1):
                     if n % i == 0: return False
                 return True
             filtered_nums = [x for x in nums if is_p(x)]
+        elif "positive" in query_lower:
+            filtered_nums = [x for x in nums if x > 0]
+        elif "negative" in query_lower:
+            filtered_nums = [x for x in nums if x < 0]
             
         if not filtered_nums:
             filtered_nums = [0]
             
-        # Default to sum, but support others
-        import math
+        import math, statistics
         if "product" in query_lower or "multiply" in query_lower:
             ans = math.prod(filtered_nums)
         elif "average" in query_lower or "mean" in query_lower:
             ans = sum(filtered_nums) / len(filtered_nums)
-        elif "max" in query_lower or "largest" in query_lower:
+        elif "median" in query_lower:
+            ans = statistics.median(filtered_nums)
+        elif "max" in query_lower or "largest" in query_lower or "maximum" in query_lower:
             ans = max(filtered_nums)
-        elif "min" in query_lower or "smallest" in query_lower:
+        elif "min" in query_lower or "smallest" in query_lower or "minimum" in query_lower:
             ans = min(filtered_nums)
+        elif "count" in query_lower or "how many" in query_lower:
+            ans = len(filtered_nums)
         else:
             ans = sum(filtered_nums)
             
-        if isinstance(ans, float) and ans.is_integer():
-            ans = int(ans)
+        if isinstance(ans, float):
+            if ans.is_integer():
+                ans = int(ans)
+            else:
+                ans = round(ans, 4)
         
         # Level 4 expects just the raw number
         return str(ans)
