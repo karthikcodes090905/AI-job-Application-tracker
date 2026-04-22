@@ -2,52 +2,49 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import re
 
-# ✅ Define app FIRST
 app = FastAPI()
 
-# ✅ Request schema
 class QueryRequest(BaseModel):
     query: str
     assets: list[str] = []
 
-# ✅ API endpoint
 @app.post("/solve")
 def solve(request: QueryRequest):
-    query = request.query.lower()
-
-    import re
+    query = request.query.lower().strip()
     numbers = list(map(int, re.findall(r'\d+', query)))
 
     if len(numbers) < 2:
         return {"output": "I don't understand"}
 
-    # Default values
-    a, b = numbers[0], numbers[1]
+    # Addition
+    if any(word in query for word in ["add", "plus", "sum", "total", "together"]):
+        result = sum(numbers)
+        return {"output": f"The sum is {result}."}
 
-    # ➕ Addition
-    if "sum" in query or "+" in query or "add" in query:
-        return {"output": f"The sum is {a + b}."}
-
-    # ➖ Subtraction (IMPORTANT FIX)
-    elif "subtract" in query or "difference" in query or "-" in query:
+    # Subtraction
+    if any(word in query for word in ["subtract", "minus", "difference", "less"]):
         if "from" in query:
-            # e.g. "subtract 5 from 20" → 20 - 5
-            return {"output": f"The difference is {b - a}."}
+            result = numbers[1] - numbers[0]
         else:
-            return {"output": f"The difference is {a - b}."}
+            result = numbers[0] - numbers[1]
+        return {"output": f"The difference is {result}."}
 
-    # ✖ Multiplication
-    elif "multiply" in query or "product" in query or "*" in query:
-        return {"output": f"The product is {a * b}."}
+    # Multiplication
+    if any(word in query for word in ["multiply", "times", "product", "multiplied by"]):
+        result = numbers[0] * numbers[1]
+        return {"output": f"The product is {result}."}
 
-    # ➗ Division
-    elif "divide" in query or "/" in query:
-        if b == 0:
-            return {"output": "Cannot divide by zero."}
-        if "by" in query:
-            # e.g. "divide 10 by 2" → 10 / 2
-            return {"output": f"The result is {a / b}."}
-        else:
-            return {"output": f"The result is {a / b}."}
+    # Division
+    if any(word in query for word in ["divide", "divided by", "quotient"]):
+        try:
+            result = numbers[0] / numbers[1]
+            # Cast to int if result is whole number
+            if result.is_integer():
+                result = int(result)
+        except ZeroDivisionError:
+            return {"output": "The result is undefined."}
+        return {"output": f"The result is {result}."}
 
-    return {"output": "I don't understand"}
+    # Operator symbol fallback
+    if "+" in query:
+        result
